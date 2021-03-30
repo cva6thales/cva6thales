@@ -1,0 +1,29 @@
+#############################################################################
+#
+# Copyright 2020 Thales
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#############################################################################
+#
+# Original Author: Zbigniew Chamski (zbigniew.chamski@invia.fr)
+#
+#############################################################################
+
+FROM riscv-debian-buster:base
+
+# Install the toolchain builder scripts.
+ADD resources/toolchain-builder.tar.xz /opt/toolchain-builder
+
+# Run the toolchain builder.
+RUN cd /opt/toolchain-builder/toolchain && sh get-toolchain.sh gcc-10.2.0-baremetal && sh build-toolchain.sh gcc-10.2.0-baremetal /opt/riscv/toolchain

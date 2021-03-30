@@ -1,0 +1,12 @@
+FROM debian:buster
+# COPY sources.list /etc/apt/sources.list 
+ENV DEBIAN_FRONTEND noninteractive
+# Dropped texlive-full from the list below.
+RUN  apt-get update && \
+     apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install -y \
+       bison flex expect dejagnu g++ gdb git graphviz lcov libusb-1.0-0-dev libelf1 libelf-dev libmpfr-dev \
+       libmpc-dev libgmp-dev make openjdk-11-jre python-pygments sloccount texinfo valgrind wget \
+       curl zip zlib1g-dev libx11-dev nano vim htop bash-completion srecord unzip ttf-dejavu-extra \
+       tree qt4-dev-tools libncurses5-dev rsyslog iputils-ping dnsutils python3 python3-pytest \
+       python3-venv iotop unattended-upgrades cmake \
+       opam z3 pkg-config

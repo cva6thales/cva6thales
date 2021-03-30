@@ -1,0 +1,72 @@
+#############################################################################
+#
+# Copyright 2020 Thales
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#############################################################################
+#
+# Original Author: Zbigniew Chamski (zbigniew.chamski@invia.fr)
+#
+#############################################################################
+
+# Build upon RISC-V Debian "Buster" base image.
+FROM riscv-debian-buster:base
+
+ENV NUM_JOBS 1
+ENV VERSION 59a9277ac1e3f9aca630fb035d1dbacaa091e375
+
+# Install any additional dependences not present in the base image.
+RUN apt install -y python3-pip automake device-tree-compiler autoconf
+
+# Install Verilator
+
+RUN cd /opt/ && \
+	git clone https://github.com/verilator/verilator && \	
+	unset VERILATOR_ROOT && \
+	cd verilator && \
+	git pull && \
+	git checkout v4.102 && \
+	autoconf && \
+	./configure && \
+	make && \
+	make install
+
+# Install Spike
+COPY ./resources/spike-shared-fesvr-lib.patch /opt/
+RUN mkdir -p /opt/spike && \
+	cd /opt/spike && \
+	git clone https://github.com/riscv/riscv-isa-sim.git && \
+	cd /opt/spike/riscv-isa-sim && \
+	git checkout $VERSION && \
+	mv /opt/spike-shared-fesvr-lib.patch /opt/spike/riscv-isa-sim/ && \
+	git apply spike-shared-fesvr-lib.patch && \
+	mkdir -p build && \
+	cd /opt/spike/riscv-isa-sim/build && \
+	../configure --enable-commitlog && \
+	make -j${NUM_JOBS} && \
+	make install
+
+# Create account for the unprivileged user 'riscv'.  Create a $HOME/.ssh directory in the process.
+RUN useradd -s /bin/bash riscv && mkdir -p /home/riscv/.ssh && chown -R riscv:riscv /home/riscv
+
+# Copy the toolchain from the builder.  Allow 'riscv' user to modify and traverse directories
+# /opt/riscv and /opt/riscv/toolchain.
+COPY --from=riscv-debian-buster:toolchain-builder /opt/riscv/toolchain /opt/riscv/toolchain
+RUN chown -R riscv:riscv /opt/riscv/ && chmod u+rwX /opt/riscv /opt/riscv/toolchain
+
+# To enable cloning of dependent repositories, the job must be run by a user with home dir.
+# gitlab-ci runs jobs in /builds.  User 'riscv' must have access to it.
+RUN mkdir -p /builds && chown riscv:riscv /builds
+USER riscv
+WORKDIR /home/riscv
